@@ -20,6 +20,8 @@ nocite: |
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+### this line is already here; do I add it again?-- PI
 # hidden dependency
 source("global-config.R",echo=FALSE)
 ```
