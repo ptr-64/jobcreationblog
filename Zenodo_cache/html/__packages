@@ -1,0 +1,15 @@
+base
+methods
+datasets
+utils
+grDevices
+graphics
+stats
+dplyr
+rmarkdown
+ggplot2
+ggthemes
+knitr
+knitcitations
+rjson
+tidyr

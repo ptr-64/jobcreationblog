@@ -14,27 +14,11 @@ csl: acm-siggraph.csl
 bibliography: [references.bib,original.bib,references-alt.bib]
 nocite: |
   @allaire2019rmarkdown, @arnold2018ggthemes, @wickham2016ggplot2, @xie2019knitr
-
 ---
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.400356.svg)](https://doi.org/10.5281/zenodo.400356)
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
 
-### this line is already here; do I add it again?-- PI
-# hidden dependency
-source("global-config.R",echo=FALSE)
-```
-```{r setup2, echo=FALSE, message=FALSE, warning=FALSE}
-library(knitcitations)
-record_as_cited(citation("rmarkdown"))
-record_as_cited(citation("base"))
-record_as_cited(citation("ggplot2"))
-record_as_cited(citation("ggthemes"))
-record_as_cited(citation("knitr"))
 
-write.bibtex(file="references.bib")
-```
 The goal of this project is to demonstrate the feasibility of creating replicable blog posts for national statistical agencies. We pick a single blog post from the United States Census Bureau, but the general principle could be applied to many countries' national statistical agencies.
 
 # Source document
@@ -48,23 +32,22 @@ Data to produce a graph like this can be found at https://www.census.gov/ces/dat
 # Getting and manipulating the data
 We will illustrate how to generate Figure 1 using R -@2019language. Users wishing to use Javascript, SAS, or Excel, or Python, can achieve the same goal using the tool of their choice. Note that we will use the full CSV file at http://www2.census.gov/ces/bds/firm/bds_f_age_release.csv, but users might also want to consult the [BDS API](https://www.census.gov/data/developers/data-sets/business-dynamics.html).
 
-```{r config}
+
+```r
 bdsbase <- "http://www2.census.gov/ces/bds/"
 type <- "f_age"
 ltype <- "firm"
 # for economy-wide data
 ewtype <- "f_all"
-
 fafile <- paste("bds_",type,"_release.csv",sep="")
 ewfile <- paste("bds_",ewtype,"_release.csv",sep="")
-
 # this changes whether we read live data or Zenodo data
 bds.from.source <- FALSE
 ```
 
-We are going to read in two files: the economy wide file `r ewfile`, and the by-firm-age file `r fafile`: If `bds.from.source` is `TRUE`, we read the most current file from the CBA website, and if not, we read from zenodo at **10.5072/zenodo.664408**
+We are going to read in two files: the economy wide file bds_f_all_release.csv, and the by-firm-age file bds_f_age_release.csv. If `bds.from.source` is `TRUE`, we read the most current file from the Census Bureau website. If `bds.from.source` is `FALSE`, we read from Zenodo, at DOI **10.5072/zenodo.664408**. In this run, `bds.from.source` is **FALSE**.
 
-```{r readbds, cache=TRUE}
+```r
 # we need the particular type 
 if ( bds.from.source ) {
   conr <- gzcon(url(paste(bdsbase,ltype,fafile,sep="/")))
@@ -76,22 +59,71 @@ if ( bds.from.source ) {
   bdsew <- read.csv(textConnection(ewtxt))
 } else {
   # if not, we read the special file to read it from Zenodo
-  source("zenodo_test.R",echo=TRUE)
+  source("01_download_replication_data.R",echo=TRUE)
   bdstype <- read.csv(file.path(dataloc,fafile))
   bdsew <- read.csv(file.path(dataloc,ewfile))
 }
 ```
 
-```{r print,include=FALSE,render="as-is"}
-if ( !bds.from.source )  {
-  print(paste0("We obtained the data files from DOI **",zenodo.prefix,".",zenodo.id,"**."))
-  }
+```
+## 
+## > library(dplyr)
+## 
+## > library(rjson)
+## 
+## > library(tidyr)
+## 
+## > basepath <- file.path(getwd())
+## 
+## > dataloc <- file.path(basepath, "data")
+## 
+## > for (dir in list(dataloc)) {
+## +     if (file.exists(dir)) {
+## +     }
+## +     else {
+## +         dir.create(file.path(dir))
+## +     }
+## + }
+## 
+## > zenodo.prefix <- "10.5072/zenodo"
+## 
+## > zenodo.id <- "664408"
+## 
+## > zenodo.api = "https://sandbox.zenodo.org/api/records/"
+## 
+## > download.file(paste0(zenodo.api, zenodo.id), destfile = file.path(dataloc, 
+## +     "metadata.json"))
+## 
+## > latest <- fromJSON(file = file.path(dataloc, "metadata.json"))
+## 
+## > print(paste0("DOI: ", latest$links$doi))
+## [1] "DOI: https://doi.org/10.5072/zenodo.664408"
+## 
+## > print(paste0("Current: ", latest$links$html))
+## [1] "Current: https://sandbox.zenodo.org/record/664408"
+## 
+## > print(paste0("Latest: ", latest$links$latest_html))
+## [1] "Latest: https://sandbox.zenodo.org/record/664408"
+## 
+## > file.list <- as.data.frame(latest$files) %>% select(starts_with("self")) %>% 
+## +     gather()
+## 
+## > for (value in file.list$value) {
+## +     print(value)
+## +     if (grepl("csv", value)) {
+## +         print("Downloading...")
+## +         file.name <- basena .... [TRUNCATED] 
+## [1] "https://sandbox.zenodo.org/api/files/beb18dc0-982d-428f-b021-b7793ce8d79b/bds_f_age_release.csv"
+## [1] "Downloading..."
+## [1] "https://sandbox.zenodo.org/api/files/beb18dc0-982d-428f-b021-b7793ce8d79b/bds_f_all_release.csv"
+## [1] "Downloading..."
 ```
 
 
 We're going to now compute the fraction of total U.S. employment (`Emp`) that is accounted for by job creation from startups (`Job_Creation if fage4="a) 0"`):
 
-```{r compute_jcrate}
+
+```r
 analysis <- bdsew[,c("year2","emp")]
 analysis <- merge(x = analysis, y=subset(bdstype,fage4=="a) 0")[,c("year2","Job_Creation")], by="year2")
 analysis$JCR_startups <- analysis$Job_Creation * 100 / analysis$emp
@@ -102,22 +134,10 @@ names(analysis) <- c("Year","Employment","Job Creation by Startups", "Job Creati
 # Create Figure 1
 
 Now we simply plot this for the time period 2004-2014:
-```{r figure1, echo=FALSE}
-library(ggplot2)
-library(ggthemes)
-gg <- ggplot(subset(analysis[,c("Year","Job Creation Rate by Startups")],Year > 2003),aes(x=Year,y=`Job Creation Rate by Startups`)) +
-  geom_line() + 
-  geom_point() +
-  theme_economist_white() +
-  ylab("Percent of Overall Employment") +
-  ggtitle("Job Creation from Startups\nas a Percentage of Total U.S. Employment\nFrom2004 to 2014") +
-  ylim(0,3.5)
-gg
-```
+![](Zenodo_files/figure-html/figure1-1.png)<!-- -->
 
 ## Compare to original image:
 
 ![original image](archive/bds1.jpg)
 
 # References
-

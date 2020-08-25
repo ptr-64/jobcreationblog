@@ -14,14 +14,11 @@ csl: acm-siggraph.csl
 bibliography: [references.bib,original.bib,references-alt.bib]
 nocite: |
   @allaire2019rmarkdown, @arnold2018ggthemes, @wickham2016ggplot2, @xie2019knitr
-
 ---
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.400356.svg)](https://doi.org/10.5281/zenodo.400356)
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-
-### this line is already here; do I add it again?-- PI
 # hidden dependency
 source("global-config.R",echo=FALSE)
 ```
@@ -32,7 +29,6 @@ record_as_cited(citation("base"))
 record_as_cited(citation("ggplot2"))
 record_as_cited(citation("ggthemes"))
 record_as_cited(citation("knitr"))
-
 write.bibtex(file="references.bib")
 ```
 The goal of this project is to demonstrate the feasibility of creating replicable blog posts for national statistical agencies. We pick a single blog post from the United States Census Bureau, but the general principle could be applied to many countries' national statistical agencies.
@@ -54,17 +50,14 @@ type <- "f_age"
 ltype <- "firm"
 # for economy-wide data
 ewtype <- "f_all"
-
 fafile <- paste("bds_",type,"_release.csv",sep="")
 ewfile <- paste("bds_",ewtype,"_release.csv",sep="")
-
 # this changes whether we read live data or Zenodo data
 bds.from.source <- FALSE
 ```
 
-We are going to read in two files: the economy wide file `r ewfile`, and the by-firm-age file `r fafile`: If `bds.from.source` is `TRUE`, we read the most current file from the CBA website, and if not, we read from zenodo at **10.5072/zenodo.664408**
-
-```{r readbds, cache=TRUE}
+We are going to read in two files: the economy wide file `r ewfile`, and the by-firm-age file `r fafile`. If `bds.from.source` is `TRUE`, we read the most current file from the Census Bureau website. If `bds.from.source` is `FALSE`, we read from Zenodo, at DOI **`r paste0(zenodo.prefix,".",zenodo.id)`**. In this run, `bds.from.source` is **`r bds.from.source`**.
+```{r readbds,cache=TRUE}
 # we need the particular type 
 if ( bds.from.source ) {
   conr <- gzcon(url(paste(bdsbase,ltype,fafile,sep="/")))
@@ -76,7 +69,7 @@ if ( bds.from.source ) {
   bdsew <- read.csv(textConnection(ewtxt))
 } else {
   # if not, we read the special file to read it from Zenodo
-  source("zenodo_test.R",echo=TRUE)
+  source("01_download_replication_data.R",echo=TRUE)
   bdstype <- read.csv(file.path(dataloc,fafile))
   bdsew <- read.csv(file.path(dataloc,ewfile))
 }
@@ -87,8 +80,6 @@ if ( !bds.from.source )  {
   print(paste0("We obtained the data files from DOI **",zenodo.prefix,".",zenodo.id,"**."))
   }
 ```
-
-
 We're going to now compute the fraction of total U.S. employment (`Emp`) that is accounted for by job creation from startups (`Job_Creation if fage4="a) 0"`):
 
 ```{r compute_jcrate}
@@ -120,4 +111,3 @@ gg
 ![original image](archive/bds1.jpg)
 
 # References
-
